@@ -1,3 +1,4 @@
 # test directories
+**/build/**
 **/test/**
 !test/.gitkeep
