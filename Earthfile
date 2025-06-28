@@ -9,6 +9,7 @@ ARG PROJECT="NEMO"
 ARG CASE="ORCA1"
 
 ARG DOCKER_USER="ezraeisbrenner"
+
 ARG SOURCE_NAME=$(echo "$(bash -c '
   SOURCE_REPO="${TRACMASS_REPOSITORY}"
   if [[ "$SOURCE_REPO" =~ github\.com[:/]([^/]+)/([^/]+)\.git$ ]] || [[ "$SOURCE_REPO" =~ github\.com[:/]([^/]+)/([^/]+)$ ]]; then
@@ -29,7 +30,7 @@ ARG FILESTEM=$(echo "$(bash -c '
 ')")
 ARG IMAGE_NAME=$(echo "$(bash -c 'echo "docker.io/${DOCKER_USER,,}/${FILESTEM,,}"')")
 
-oci-base:
+runtime:
     FROM docker.io/library/ubuntu:20.04
     ENV DEBIAN_FRONTEND noninteractive
     RUN apt-get update \
@@ -46,8 +47,8 @@ oci-base:
         LANG=en_US.UTF-8 \
         LANGUAGE=en_US.UTF-8
 
-oci-deps:
-    FROM +oci-base
+buildenv:
+    FROM +runtime
     RUN apt-get update \
         && apt-get install -yq --no-install-recommends \
         git \
@@ -57,8 +58,8 @@ oci-deps:
         gfortran \
         && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-oci-build:
-    FROM +oci-deps
+compile:
+    FROM +buildenv
     RUN git clone ${TRACMASS_REPOSITORY} /tracmass && \
         if [ ${TRACMASS_REVISION} != latest ]; \
         then cd /tracmass && git checkout ${TRACMASS_REVISION}; \
@@ -71,22 +72,31 @@ oci-build:
     RUN cd /tracmass && \
         make --file=Makefile
 
-    SAVE ARTIFACT /tracmass
+    SAVE ARTIFACT /tracmass/runtracmass
+    SAVE ARTIFACT /tracmass/namelist.in
 
-oci-run:
-    FROM +oci-base
-    COPY +oci-build/tracmass /tracmass
-    COPY entrypoint.sh /entrypoint.sh
+image:
+    FROM +runtime
+    COPY +compile/runtracmass /tracmass/runtracmass
+    COPY +compile/namelist.in /tracmass/namelist.in
+    RUN printf "%s\n" \
+        "#!/bin/bash" \
+        "set -e" \
+        "if [ -f /input/namelist.in ]; then" \
+        "    cp /input/namelist.in /tracmass/namelist.in" \
+        "fi" \
+        "sed -i -e 's/^\s*outDataDir\s*=.*/outDataDir=\"\/output\/\"/g' /tracmass/namelist.in" \
+        "sed -i -e 's/^\s*seeddir\s*=.*/seeddir=\"\/input\/\"/g' /tracmass/namelist.in" \
+        "sed -i -e 's/^\s*topoDataDir\s*=.*/topoDataDir=\"\/input\/\"/g' /tracmass/namelist.in" \
+        "sed -i -e 's/^\s*physDataDir\s*=.*/physDataDir=\"\/input\/data\/\"/g' /tracmass/namelist.in" \
+        "cp /tracmass/namelist.in /output/namelist.out" \
+        "cd /tracmass" \
+        "./runtracmass" \
+        > /entrypoint.sh
     RUN chmod +x /entrypoint.sh
     ENTRYPOINT ["/entrypoint.sh"]
 
     SAVE IMAGE $IMAGE_NAME
 
-sif:
-    FROM quay.io/singularity/singularity:v3.9.4
-    WORKDIR /home/sif
-    RUN git clone https://github.com/Eisbrenner/tracmass-singularity.git /tracmass-singularity && \
-        cp /tracmass-singularity/build ./build && cp /tracmass-singularity/TEMPLATE-TRACMASS.def ./TEMPLATE-TRACMASS.def
-    RUN bash build --container --source=${TRACMASS_REPOSITORY} --revision=${TRACMASS_REVISION} --project=${PROJECT} --case=${CASE}
-    RUN --privileged singularity build image.sif ${FILESTEM}.def
-    SAVE ARTIFACT image.sif AS LOCAL build/${FILESTEM}.sif
+all:
+    BUILD +image

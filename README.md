@@ -1,5 +1,17 @@
 # tracmass-earthly
 
+Configure build in `tracmass_build.sh` and build with
+
+```bash
+bash tracmass_build.sh
+```
+
+Configure run in `tracmass_config.sh` and run with
+
+```bash
+bash tracmass_run.sh
+```
+
 ## Test data and Tracmass version
 
 + Tracmass version:

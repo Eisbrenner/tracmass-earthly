@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Source the configuration file
-source ./config.sh
+source ./tracmass_config.sh
 
 # =========================================================================
 # Below code is automatic and does not need user interference
@@ -25,7 +25,7 @@ for VAR in $(compgen -A variable | grep '^MNT_'); do
 done
 
 # Create output directories if they do not exist
-mkdir -p $TM_OUT
+mkdir -p $MNT_OUT
 
 # Start building the CMD variable
 CMD="run -it"
