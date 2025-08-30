@@ -8,6 +8,9 @@ ARG TRACMASS_REVISION="e20fdaf"
 ARG PROJECT="NEMO"
 ARG CASE="ORCA1"
 
+ARG NAMELIST_FILENAME="namelist.in"
+ARG SEEDS_FILENAME="seeds.txt"
+
 ARG DOCKER_USER="ezraeisbrenner"
 
 ARG SOURCE_NAME=$(echo "$(bash -c '
@@ -82,13 +85,17 @@ image:
     RUN printf "%s\n" \
         "#!/bin/bash" \
         "set -e" \
-        "if [ -f /input/namelist.in ]; then" \
-        "    cp /input/namelist.in /tracmass/namelist.in" \
+        "if [ -f /input/"${NAMELIST_FILENAME}" ]; then" \
+        "    cp /input/"${NAMELIST_FILENAME}" /tracmass/namelist.in" \
         "fi" \
-        "sed -i -e 's/^\s*outDataDir\s*=.*/outDataDir=\"\/output\/\"/g' /tracmass/namelist.in" \
-        "sed -i -e 's/^\s*seeddir\s*=.*/seeddir=\"\/input\/\"/g' /tracmass/namelist.in" \
-        "sed -i -e 's/^\s*topoDataDir\s*=.*/topoDataDir=\"\/input\/\"/g' /tracmass/namelist.in" \
-        "sed -i -e 's/^\s*physDataDir\s*=.*/physDataDir=\"\/input\/data\/\"/g' /tracmass/namelist.in" \
+        "if [ -f /input/"${SEEDS_FILENAME}" ]; then" \
+        "    cp /input/"${SEEDS_FILENAME}" /tracmass/seeds.txt" \
+        "fi" \
+        "sed -i -e 's|^\s*outDataDir\s*=.*|outDataDir=\"/output/\"|g' /tracmass/namelist.in" \
+        "sed -i -e 's|^\s*seeddir\s*=.*|seeddir=\"/input/\"|g' /tracmass/namelist.in" \
+        "sed -i -e 's|^\s*seedfile\s*=.*|seedfile=\"seeds.txt\"|g' /tracmass/namelist.in" \
+        "sed -i -e 's|^\s*topoDataDir\s*=.*|topoDataDir=\"/input/\"|g' /tracmass/namelist.in" \
+        "sed -i -e 's|^\s*physDataDir\s*=.*|physDataDir=\"/input/data/\"|g' /tracmass/namelist.in" \
         "cp /tracmass/namelist.in /output/namelist.out" \
         "cd /tracmass" \
         "./runtracmass" \

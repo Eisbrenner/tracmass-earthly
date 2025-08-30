@@ -49,7 +49,11 @@ echo "================================================================="
 echo "Constructing command to run the container..."
 echo "================================================================="
 echo " "
-echo "[docker/podman] $CMD"
+if [ "$1" == "docker" ]; then
+    echo "docker $CMD"
+else
+    echo "podman $CMD"
+fi
 echo " "
 echo "================================================================="
 read -p "Do you want to proceed? (yes/no): " response
@@ -66,9 +70,7 @@ fi
 
 # Execute the appropriate container runtime
 if [ "$1" == "docker" ]; then
-    echo "Using Docker..."
     docker $CMD --user $(id -u):$(id -g) $TM_IMAGE
 else
-    echo "Using Podman..."
     podman $CMD $TM_IMAGE
 fi
