@@ -90,13 +90,14 @@ image:
         "fi" \
         "if [ -f /input/"${SEEDS_FILENAME}" ]; then" \
         "    cp /input/"${SEEDS_FILENAME}" /tracmass/seeds.txt" \
+        "    cp /tracmass/seeds.txt /output/"${SEEDS_FILENAME}"" \
         "fi" \
         "sed -i -e 's|^\s*outDataDir\s*=.*|outDataDir=\"/output/\"|g' /tracmass/namelist.in" \
         "sed -i -e 's|^\s*seeddir\s*=.*|seeddir=\"/input/\"|g' /tracmass/namelist.in" \
         "sed -i -e 's|^\s*seedfile\s*=.*|seedfile=\"seeds.txt\"|g' /tracmass/namelist.in" \
         "sed -i -e 's|^\s*topoDataDir\s*=.*|topoDataDir=\"/input/\"|g' /tracmass/namelist.in" \
         "sed -i -e 's|^\s*physDataDir\s*=.*|physDataDir=\"/input/data/\"|g' /tracmass/namelist.in" \
-        "cp /tracmass/namelist.in /output/namelist.out" \
+        "cp /tracmass/namelist.in /output/"${NAMELIST_FILENAME}"" \
         "cd /tracmass" \
         "./runtracmass" \
         > /entrypoint.sh
